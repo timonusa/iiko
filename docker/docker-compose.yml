@@ -1,0 +1,62 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      POSTGRES_HOST: "${POSTGRES_HOST:?}"
+      POSTGRES_PORT: "${POSTGRES_PORT:?}"
+      POSTGRES_USER: "${POSTGRES_USER:?}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?}"
+      POSTGRES_DB: "${POSTGRES_DB:?}"
+      POSTGRES_SSLMODE: "${POSTGRES_SSLMODE:?}"
+      REDIS_HOST: "${REDIS_HOST:?}"
+      REDIS_PORT: "${REDIS_PORT:?}"
+      REDIS_USER: "${REDIS_USER:?}"
+      REDIS_PASSWORD: "${REDIS_PASSWORD:?}"
+      REDIS_DB: "${REDIS_DB:?}"
+      TOKEN_TTL: "${TOKEN_TTL:?}"
+    ports:
+      - "${APP_PORT:?}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # PostgreSQL и Redis доступны только внутри docker-сети, наружу порты не пробрасываются.
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:?}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?}"
+      POSTGRES_DB: "${POSTGRES_DB:?}"
+      # PGPORT задаёт порт и серверу, и pg_isready/psql внутри контейнера.
+      PGPORT: "${POSTGRES_PORT:?}"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    environment:
+      REDIS_PORT: "${REDIS_PORT:?}"
+      REDIS_PASSWORD: "${REDIS_PASSWORD:?}"
+      REDISCLI_AUTH: "${REDIS_PASSWORD:?}"
+    command: ["sh", "-c", "exec redis-server --port \"$$REDIS_PORT\" --requirepass \"$$REDIS_PASSWORD\""]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -p \"$$REDIS_PORT\" ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+volumes:
+  pgdata:
