@@ -14,6 +14,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Register обрабатывает POST /register: проверяет email и пароль, сохраняет пользователя
 func Register(w http.ResponseWriter, r *http.Request) {
 
 	status := http.StatusCreated

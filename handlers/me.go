@@ -15,6 +15,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// Me обрабатывает GET /me: по токену из заголовка Authorization: Bearer <token>
 func Me(w http.ResponseWriter, r *http.Request) {
 
 	status := http.StatusOK

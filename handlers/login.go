@@ -2,16 +2,10 @@ package handlers
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
-	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -19,6 +13,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Login обрабатывает POST /login: проверяет email и пароль и создаёт новую сессию.
 func Login(w http.ResponseWriter, r *http.Request) {
 
 	status := http.StatusOK
@@ -72,25 +67,9 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//
-	ttl, _ := strconv.Atoi(os.Getenv("TOKEN_TTL"))
-	if ttl <= 0 {
-		ttl = 3600
-	}
-
-	//
-	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
-		status = http.StatusInternalServerError
-		response.Error = "internal error"
-		return
-	}
-	token := base64.RawURLEncoding.EncodeToString(b)
-	sum := sha256.Sum256([]byte(token))
-
-	//
-	err = Redis.Set(ctx, "session:"+hex.EncodeToString(sum[:]), id, time.Duration(ttl)*time.Second).Err()
+	token, err := newSession(ctx, id)
 	if err != nil {
-		log.Printf("login: save session: %v", err)
+		log.Printf("login: create session: %v", err)
 		status = http.StatusServiceUnavailable
 		response.Error = "service temporarily unavailable"
 		return

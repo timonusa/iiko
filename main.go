@@ -25,21 +25,19 @@ func main() {
 
 	//
 	rdb := connections.NewRedis()
-	defer rdb.Close()
+	defer func() {
+		if err := rdb.Close(); err != nil {
+			log.Printf("redis close: %v", err)
+		}
+	}()
 
 	handlers.DB = pool
 	handlers.Redis = rdb
 
 	//
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /register", handlers.Register)
-	mux.HandleFunc("POST /login", handlers.Login)
-	mux.HandleFunc("GET /me", handlers.Me)
-
-	//
 	server := &http.Server{
 		Addr:              ":8080",
-		Handler:           mux,
+		Handler:           newRouter(),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,
@@ -65,4 +63,12 @@ func main() {
 	if err := server.Shutdown(ctx); err != nil {
 		log.Printf("shutdown: %v", err)
 	}
+}
+
+func newRouter() *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /register", handlers.Register)
+	mux.HandleFunc("POST /login", handlers.Login)
+	mux.HandleFunc("GET /me", handlers.Me)
+	return mux
 }

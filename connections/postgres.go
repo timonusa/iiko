@@ -1,3 +1,4 @@
+// Package connections создаёт подключения к внешним хранилищам по настройкам из окружения.
 package connections
 
 import (
@@ -9,8 +10,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// NewPostgres создаёт пул подключений к PostgreSQL. Пул подключается лениво:
-// если PostgreSQL недоступен, сервис всё равно стартует.
+// NewPostgres создаёт пул подключений к PostgreSQL по переменным окружения
+// POSTGRES_HOST, POSTGRES_PORT, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB и POSTGRES_SSLMODE.
+//
+// Пул подключается лениво: если PostgreSQL недоступен, сервис всё равно стартует.
+// Ошибка возвращается только при некорректной конфигурации.
 func NewPostgres(ctx context.Context) (*pgxpool.Pool, error) {
 	// URL собирается через net/url, чтобы спецсимволы в пароле не ломали строку подключения.
 	dsn := url.URL{
