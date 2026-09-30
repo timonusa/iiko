@@ -1,0 +1,17 @@
+# IDE
+.idea/
+.vscode/
+
+# Бинарники сборки
+*.exe
+/service
+/auth
+
+# Артефакты тестов
+*.test
+*.out
+coverage.*
+
+# ОС
+.DS_Store
+Thumbs.db
